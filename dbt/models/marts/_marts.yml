@@ -1,0 +1,47 @@
+version: 2
+
+models:
+  - name: dim_clients
+    description: Client accounts and their contracted prices.
+    columns:
+      - name: client_id
+        data_tests: [unique, not_null]
+
+  - name: fct_daily_spend
+    description: >
+      Unified daily spend in USD across Snowflake (compute, billable cloud services,
+      storage, serverless, Cortex AI) and Fivetran ingestion. Grain: client / day / item.
+    columns:
+      - name: spend_id
+        data_tests: [unique, not_null]
+      - name: client_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_clients')
+                field: client_id
+      - name: category
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [compute, cloud_services, storage, serverless, ai, ingestion]
+      - name: cost_usd
+        data_tests: [not_null]
+
+  - name: fct_monthly_spend
+    description: Monthly spend by client, platform and category with month-over-month change.
+
+  - name: fct_dbt_model_cost
+    description: Cost attributed to each dbt model per month. Not additive to fct_daily_spend.
+
+  - name: fct_spend_anomalies
+    description: Days where spend jumped above the trailing 28-day baseline (z-score threshold in dbt_project.yml).
+
+  - name: metricflow_time_spine
+    description: Daily calendar for the semantic layer.
+    time_spine:
+      standard_granularity_column: date_day
+    columns:
+      - name: date_day
+        granularity: day

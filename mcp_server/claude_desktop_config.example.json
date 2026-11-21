@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "data-spend-copilot": {
+      "command": "python",
+      "args": ["-m", "mcp_server.server"],
+      "cwd": "/path/to/data-spend-copilot",
+      "env": {
+        "PYTHONPATH": "/path/to/data-spend-copilot",
+        "COPILOT_CLIENT_SCOPE": ""
+      }
+    }
+  }
+}

@@ -1,0 +1,31 @@
+name: data_spend_copilot
+version: "1.0.0"
+config-version: 2
+profile: data_spend_copilot
+
+model-paths: ["models"]
+macro-paths: ["macros"]
+test-paths: ["tests"]
+target-path: target
+clean-targets: [target, dbt_packages]
+
+vars:
+  # Snowflake bills cloud services only above 10% of daily compute credits
+  cloud_services_free_ratio: 0.10
+  # z-score above which a day is flagged as a spend anomaly
+  anomaly_z_threshold: 3.0
+
+models:
+  data_spend_copilot:
+    staging:
+      +materialized: view
+      +schema: staging
+    intermediate:
+      +materialized: view
+      +schema: intermediate
+    marts:
+      +materialized: table
+      +schema: marts
+
+flags:
+  send_anonymous_usage_stats: false

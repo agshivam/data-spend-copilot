@@ -1,0 +1,27 @@
+version: 2
+
+sources:
+  - name: raw
+    schema: raw
+    description: >
+      Raw usage data. Synthetic in this repo (scripts/generate_data.py); on a real
+      account, sql/snowflake/01_extract_raw.sql fills the same tables from
+      ACCOUNT_USAGE and FIVETRAN_METADATA.
+    tables:
+      - name: clients
+        description: One row per client account with contracted prices.
+        columns:
+          - name: client_id
+            data_tests: [unique, not_null]
+      - name: warehouse_metering
+        description: Daily credits per warehouse (WAREHOUSE_METERING_HISTORY rolled up to day).
+      - name: storage_usage
+        description: Daily average bytes (DATABASE_STORAGE_USAGE_HISTORY + STAGE_STORAGE_USAGE_HISTORY).
+      - name: serverless_metering
+        description: Daily serverless credits by service type (METERING_DAILY_HISTORY).
+      - name: cortex_usage
+        description: Daily Cortex AI tokens and credits by function and model.
+      - name: fivetran_mar
+        description: Fivetran incremental Monthly Active Rows by table (FIVETRAN_METADATA.INCREMENTAL_MAR).
+      - name: dbt_runs
+        description: Credits attributed to each dbt model run (from query tags / dbt artifacts).

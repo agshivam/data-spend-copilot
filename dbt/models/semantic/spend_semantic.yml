@@ -1,0 +1,106 @@
+version: 2
+
+# dbt Semantic Layer (MetricFlow): one governed definition of every spend metric.
+# The Streamlit app and the MCP server both query these metrics, so "AI spend"
+# means exactly the same thing to a human on the dashboard and to an AI agent.
+
+semantic_models:
+  - name: spend
+    description: Daily priced spend line items across Snowflake and Fivetran.
+    model: ref('fct_daily_spend')
+    defaults:
+      agg_time_dimension: spend_date
+    entities:
+      - name: spend_item
+        type: primary
+        expr: spend_id
+      - name: client
+        type: foreign
+        expr: client_id
+    dimensions:
+      - name: spend_date
+        type: time
+        type_params:
+          time_granularity: day
+      - name: platform
+        type: categorical
+      - name: category
+        type: categorical
+      - name: sub_category
+        type: categorical
+    measures:
+      - name: cost_usd
+        description: Spend in USD.
+        agg: sum
+      - name: usage_quantity
+        description: Raw usage in the line item's unit (credits, TB, tokens, paid rows).
+        agg: sum
+
+  - name: clients
+    description: Client accounts.
+    model: ref('dim_clients')
+    entities:
+      - name: client
+        type: primary
+        expr: client_id
+    dimensions:
+      - name: client_name
+        type: categorical
+      - name: industry
+        type: categorical
+
+metrics:
+  - name: total_spend
+    label: Total spend (USD)
+    description: All billable spend across Snowflake and Fivetran.
+    type: simple
+    type_params:
+      measure: cost_usd
+
+  - name: snowflake_spend
+    label: Snowflake spend (USD)
+    description: Compute, billable cloud services, storage, serverless and Cortex AI.
+    type: simple
+    type_params:
+      measure: cost_usd
+    filter: "{{ Dimension('spend_item__platform') }} = 'snowflake'"
+
+  - name: compute_spend
+    label: Warehouse compute spend (USD)
+    description: Virtual warehouse compute credits priced at the client's contract rate.
+    type: simple
+    type_params:
+      measure: cost_usd
+    filter: "{{ Dimension('spend_item__category') }} = 'compute'"
+
+  - name: ai_spend
+    label: AI / Cortex spend (USD)
+    description: Cortex AI functions (COMPLETE, EMBED, CLASSIFY, SUMMARIZE...) priced from token credits.
+    type: simple
+    type_params:
+      measure: cost_usd
+    filter: "{{ Dimension('spend_item__category') }} = 'ai'"
+
+  - name: ingestion_spend
+    label: Fivetran ingestion spend (USD)
+    description: Paid Monthly Active Rows priced at the client's Fivetran rate.
+    type: simple
+    type_params:
+      measure: cost_usd
+    filter: "{{ Dimension('spend_item__category') }} = 'ingestion'"
+
+  - name: storage_spend
+    label: Storage spend (USD)
+    description: Database, stage and fail-safe storage, priced per TB-month.
+    type: simple
+    type_params:
+      measure: cost_usd
+    filter: "{{ Dimension('spend_item__category') }} = 'storage'"
+
+  - name: ai_share_of_spend
+    label: AI share of total spend
+    description: Fraction of total spend that goes to AI. Watch this grow.
+    type: ratio
+    type_params:
+      numerator: ai_spend
+      denominator: total_spend

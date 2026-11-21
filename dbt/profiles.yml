@@ -1,0 +1,21 @@
+data_spend_copilot:
+  target: "{{ env_var('DBT_TARGET', 'duckdb') }}"
+  outputs:
+    # Free, local/CI target: runs anywhere (GitHub Actions, Streamlit Cloud)
+    duckdb:
+      type: duckdb
+      path: "{{ env_var('SPEND_DB', '../data/spend.duckdb') }}"
+      threads: 4
+
+    # Same models on a real Snowflake account (run sql/snowflake/01_extract_raw.sql first)
+    snowflake:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT', '') }}"
+      user: "{{ env_var('SNOWFLAKE_USER', '') }}"
+      password: "{{ env_var('SNOWFLAKE_PASSWORD', '') }}"
+      role: "{{ env_var('SNOWFLAKE_ROLE', 'SPEND_COPILOT_ROLE') }}"
+      warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE', 'SPEND_COPILOT_WH') }}"
+      database: "{{ env_var('SNOWFLAKE_DATABASE', 'SPEND_COPILOT') }}"
+      schema: analytics
+      threads: 4
+      query_tag: data_spend_copilot
